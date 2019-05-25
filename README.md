@@ -1,67 +1,129 @@
-# Insight DevOps Engineering Systems Puzzle
+# systems-puzzle
 
 ## Table of Contents
-1. [Understanding the puzzle](README.md#understanding-the-puzzle)
-2. [Introduction](README.md#introduction)
-3. [Puzzle details](README.md#puzzle-details)
-4. [Instructions to submit your solution](README.md#instructions-to-submit-your-solution)
-5. [FAQ](README.md#faq)
+1. Description
+2. Test environment
+3. Usage
+4. Thanks
 
-# Understanding the puzzle
+## Desription
 
-We highly recommend that you take a few dedicated minutes to read this README in its entirety before starting to think about potential solutions. You'll probably find it useful to review the codebase and understand the system at a high-level before attempting to find specific bugs.
+This repository contains a solution to the Insight DevOps Engineering [challenge](https://github.com/InsightDataScience/systems-puzzle). See the link for a complete problem description.
 
-# Introduction
+## Test environment
 
-Imagine you're on an engineering team that is building an eCommerce site where users can buy and sell items (similar to Etsy or eBay). One of the developers on your team has put together a very simple prototype for a system that writes and reads to a database. The developer is using Postgres for the backend database, the Python Flask framework as an application server, and nginx as a web server. All of this is developed with the Docker Engine, and put together with Docker Compose.
+Docker is very invasive (and sucks in general), so to run the application I used a clean Arch Linux virtual machine. Commands executed as root (normal user) are indicated by # ($). Yes, one can do things as the "docker" user, but we are still pulling random images off the Internet, so meh... The relevant packages are:
+```
+$ pacman -Q | grep docker
+docker 1:18.09.6-1
+docker-compose 1.24.0-1
+python-docker 4.0.1-1
+python-docker-pycreds 0.4.0-1
+python-dockerpty 0.4.1-4
+```
+I suggest installing the base image and then taking its rw snapshot, i.e. on the host:
+```
+$ # Make the image
+$ qemu-img create -f qcow2 arch.qcow2 10G
+$ 
+$ # Install the system
+$ qemu-system-x86_64 -enable-kvm -m 1G ... -drive file="arch.qcow2",if=virtio ...
+$
+$ # Take snapshot and boot it
+$ qemu-img -f qcow2 -b ./arch.qcow2 arch-snapshot.qcow2
+$ qemu-system-x86_64 -enable-kvm -m 1G ... -drive file="arch-snapshot.qcow2",if=virtio ...
+```
+Now if something goes wrong, kill the qemu process, rm the snapshot and start over.
 
-Unfortunately, the developer is new to many of these tools, and is having a number of issues. The developer needs your help debugging the system and getting it to work properly.
+## Usage
 
-# Puzzle details
+Clone the repo inside the VM and cd into the repo dir:
+```
+$ systemd-detect-virt
+kvm
+$ uname -a
+Linux hyperarch 5.1.4-arch1-1-ARCH #1 SMP PREEMPT Wed May 22 08:06:56 UTC 2019 x86_64 GNU/Linux
+$ echo -E "$PWD"
+/home/lisaev/systems-puzzle
+```
 
-The codebase included in this repo is nearly functional, but has a few bugs that are preventing it from working properly. The goal of this puzzle is to find these bugs and fix them. To do this, you'll have to familiarize yourself with the various technologies (Docker, nginx, Flask, and Postgres). You definitely don't have to be an expert on these, but you should know them well enough to understand what the problem is.
+Next, follow instructions from assignment. First, we set up the database:
+```
+$ su -
+Password:
+# docker-compose up -d db
+...
+# docker-compose run --rm flaskapp /bin/bash -c "cd /opt/services/flaskapp/src && python -c  'import database; database.init_db()'"
+...
+```
+and verify that it's OK:
+```
+# docker ps --format '{{.ID}}' --filter "name=systems-puzzle_db_1"
+6474674f3c70
+# docker exec -it 6474674f3c70 /bin/bash
+root@6474674f3c70:/# su -l postgres
+No directory, logging in with HOME=/
+$ psql
+psql (9.6.5)
+Type "help" for help.
 
-Assuming you have the Docker Engine and Docker Compose already installed, the developer said that the steps for running the system is to open a terminal, `cd` into this repo, and then enter these two commands:
+postgres=# \l
+                                  List of databases
+    Name     |  Owner   | Encoding |  Collate   |   Ctype    |   Access privileges   
+-------------+----------+----------+------------+------------+-----------------------
+ flaskapp_db | postgres | UTF8     | en_US.utf8 | en_US.utf8 | 
+ postgres    | postgres | UTF8     | en_US.utf8 | en_US.utf8 | 
+ template0   | postgres | UTF8     | en_US.utf8 | en_US.utf8 | =c/postgres          +
+             |          |          |            |            | postgres=CTc/postgres
+ template1   | postgres | UTF8     | en_US.utf8 | en_US.utf8 | =c/postgres          +
+             |          |          |            |            | postgres=CTc/postgres
+(4 rows)
 
-    docker-compose up -d db
-    docker-compose run --rm flaskapp /bin/bash -c "cd /opt/services/flaskapp/src && python -c  'import database; database.init_db()'"
+postgres=# \c flaskapp_db
+You are now connected to database "flaskapp_db" as user "postgres".
+flaskapp_db=# \dt
+         List of relations
+ Schema | Name  | Type  |   Owner   
+--------+-------+-------+-----------
+ public | items | table | docker_pg
+(1 row)
 
-This "bootstraps" the PostgreSQL database with the correct tables. After that you can run the whole system with:
+flaskapp_db=# select * from items;
+ id | name | quantity | description | date_added 
+----+------+----------+-------------+------------
+(0 rows)
+```
+Second, we bring the rest of the system with
+```
+# docker-compose up -d
+...
+# docker ps
+# docker ps --format "{{.ID}} {{.Names}} {{.Ports}}"
+d6f462e55759 systems-puzzle_nginx_1 0.0.0.0:8080->80/tcp
+7e71ab6679b4 systems-puzzle_flaskapp_1 5001/tcp
+6474674f3c70 systems-puzzle_db_1 5432/tcp
+```
+This last command is to be used every time we want to start the entire app (e.g. after rebooting the VM).
 
-    docker-compose up -d
+Assuming the application is up and running, there is a docker-proxy process listening on *:8080 that forwards the traffic to the nginx container on port 80. Therefore, one can connect to the VM from a browser on the host.
 
-At that point, the web application should be visible by going to `localhost:8080` in a web browser. 
+After entering few items:
+```
+flaskapp_db=# select * from items;
+ id |                name                | quantity | description |         date_added         
+----+------------------------------------+----------+-------------+----------------------------
+  1 | Armani                             |        3 | shoes       | 2019-05-25 21:32:26.488658
+  2 | Rolex                              |        1 | watch       | 2019-05-25 21:32:46.516191
+  3 | Hitachi                            |        1 | TV          | 2019-05-25 21:36:00.664181
+  4 | Dell Precision                     |        1 | tech        | 2019-05-25 21:38:47.240023
+  5 | Apple MacBook Pro 15'' retine      |        1 | tech        | 2019-05-25 21:47:10.106953
+  6 | gnfek                              |       44 | alanc       | 2019-05-25 22:40:07.068937
+  7 | HP EliteBook                       |        2 | tech        | 2019-05-25 22:47:46.426146
+  8 | A & B Strugatsky, Hard to be a God |        1 | books       | 2019-05-25 22:55:39.155133
+(8 rows)
+```
 
-Once you've corrected the bugs and have the basic features working, commit the functional codebase to a new repo following the instructions below. As you debug the system, you should keep track of your thought process and what steps you took to solve the puzzle.
+## Thanks
 
-## Instructions to submit your solution
-* Don't schedule your interview until you've worked on the puzzle 
-* To submit your entry please use the link you received in your systems puzzle invitation
-* You will only be able to submit through the link one time
-* For security, we will not open solutions submitted via files
-* Use the submission box to enter the link to your GitHub repo or Bitbucket ONLY
-* Link to the specific repo for this project, not your general profile
-* Put any comments in the README inside your project repo
-
-# FAQ
-
-Here are some common questions we've received. If you have additional questions, please email us at `devops@insightdata.com` and we'll answer your questions as quickly as we can (during PST business hours), and update this FAQ. Again, only contact us after you have read through the Readme and FAQ one more time and cannot find the answer to your question.
-
-### Which Github link should I submit?
-You should submit the URL for the top-level root of your repository. For example, this repo would be submitted by copying the URL `https://github.com/InsightDataScience/systems-puzzle` into the appropriate field on the application. **Do NOT try to submit your coding puzzle using a pull request**, which would make your source code publicly available.
-
-### Do I need a private Github repo?
-No, you may use a public repo, there is no need to purchase a private repo. You may also submit a link to a Bitbucket repo if you prefer.
-
-### What sort of system should I use to run my program (Windows, Linux, Mac)?
-You should use Docker to run and test your solution, which should work on any operating system. If you're unfamiliar with Docker, we recommend attending one of our Online Tech Talks on Docker, which you should've received information about in your invitation. Alternatively, there are ample free resources available on docker.com.
-
-### How will my solution be evaluated?
-While we will review your submission briefly before your interview, the main point of this puzzle is to serve as content for discussion during the interview. In the interview, we'll evaluate your problem solving and debugging skills based off how you solved this puzzle, so be sure to document your thought process.
-
-### This eCommerce site is ugly...should I improve the design?  
-No, you should focus on the functionality. Your engineering team will bring on a designer and front-end developer later in the process, so don't worry about that aspect in this puzzle. If you have extra time, it would be far better to focus on aspects that make the code cleaner and easier to use, like tests and refactoring.
-
-### Should I use orchestration tools like Kubernetes?
-While technologies like Kubernetes are quite powerful, they're likely overkill for the simple application in this puzzle. We recommend that you stick to Docker Compose for this puzzle.
-
+1. [PostgreSQL Exercises](https://pgexercises.com/questions/basic/selectall.html)
+2. [Arch](https://www.archlinux.org)
