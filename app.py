@@ -24,10 +24,13 @@ def success():
     results = []
  
     qry = db_session.query(Items)
-    results = qry.all()
+    for i in qry.all():
+        v = vars(i)
+        results.append({d: str(v[d]) for d in v.keys()
+            if ((not d.startswith("_")) and (not d.endswith("_")))})
 
     return str(results)
-  
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port = 5001)
