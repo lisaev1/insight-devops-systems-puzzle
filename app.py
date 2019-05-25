@@ -29,7 +29,7 @@ def success():
         results.append({d: str(v[d]) for d in v.keys()
             if ((not d.startswith("_")) and (not d.endswith("_")))})
 
-    return str(results)
+    return "Your last 3 placed items: " + str(results[-3:])
 
 
 if __name__ == '__main__':
