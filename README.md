@@ -127,3 +127,4 @@ flaskapp_db=# select * from items;
 
 1. [PostgreSQL Exercises](https://pgexercises.com/questions/basic/selectall.html)
 2. [Arch](https://www.archlinux.org)
+3. [PostgreSQL -- ArchWiki](https://wiki.archlinux.org/index.php/PostgreSQL)
