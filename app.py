@@ -13,6 +13,11 @@ app.secret_key = os.environ['APP_SECRET_KEY']
 def add_item():
     form = ItemForm()
     if form.validate_on_submit():
+        try:
+            _ = int(form.quantity.data)
+        except ValueError:
+            return "The \"quantity\" field must contain an integer. No items were added, and the database was NOT updated."
+
         item = Items(name=form.name.data, quantity=form.quantity.data, description=form.description.data, date_added=datetime.datetime.now())
         db_session.add(item)
         db_session.commit()
