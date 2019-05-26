@@ -6,13 +6,13 @@
 3. Usage
 4. Thanks
 
-## Desription
+## Description
 
 This repository contains a solution to the Insight DevOps Engineering [challenge](https://github.com/InsightDataScience/systems-puzzle). See the link for a complete problem description.
 
 ## Test environment
 
-Docker is very invasive (and sucks in general), so to run the application I used a clean Arch Linux virtual machine. Commands executed as root (normal user) are indicated by # ($). Yes, one can do things as the "docker" user, but we are still pulling random images off the Internet, so meh... The relevant packages are:
+Docker is very invasive (and sucks in general), so to not ruin the host machine I used a clean Arch Linux virtual machine. Commands executed as root (regular user) are indicated by # ($). Yes, one can do things as a user in the "docker" group, but we are still pulling random images off the Internet, so meh... The relevant packages are:
 ```
 $ pacman -Q | grep docker
 docker 1:18.09.6-1
@@ -51,6 +51,7 @@ Next, follow instructions from assignment. First, we set up the database:
 ```
 $ su -
 Password:
+# cd /home/lisaev/systems-puzzle
 # docker-compose up -d db
 ...
 # docker-compose run --rm flaskapp /bin/bash -c "cd /opt/services/flaskapp/src && python -c  'import database; database.init_db()'"
@@ -93,7 +94,7 @@ flaskapp_db=# select * from items;
 ----+------+----------+-------------+------------
 (0 rows)
 ```
-Second, we bring the rest of the system with
+Second, we bring up the rest of the application with
 ```
 # docker-compose up -d
 ...
@@ -103,9 +104,9 @@ d6f462e55759 systems-puzzle_nginx_1 0.0.0.0:8080->80/tcp
 7e71ab6679b4 systems-puzzle_flaskapp_1 5001/tcp
 6474674f3c70 systems-puzzle_db_1 5432/tcp
 ```
-This last command is to be used every time we want to start the entire app (e.g. after rebooting the VM).
+This last docker-compose command is to be used every time we want to start the entire application (e.g. after rebooting the VM).
 
-Assuming the application is up and running, there is a docker-proxy process listening on *:8080 that forwards the traffic to the nginx container on port 80. Therefore, one can connect to the VM from a browser on the host.
+Assuming the application is up and running, there should be port-forwarding through NAT from port 8080 on the VM to port 80 in the nginx container. Therefore, one can connect to the VM from a browser on the host (using qemu bridge networking).
 
 After entering few items:
 ```
