@@ -18,6 +18,16 @@ def add_item():
         except ValueError:
             return "The \"quantity\" field must contain an integer. No items were added, and the database was NOT updated."
 
+        if (len(form.name.data) > 256):
+            _l = "name"
+        elif (len(form.description.data) > 256):
+            _l = "description"
+        else:
+            _l = "x"
+
+        if (_l != "x"):
+            return "Length of the \"{}\" field must not exceed 256 characters. No items were added, and the database was NOT updated.".format(_l)
+
         item = Items(name=form.name.data,
                      quantity=form.quantity.data,
                      description=form.description.data,
