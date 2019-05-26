@@ -2,6 +2,7 @@
 
 ## Table of Contents
 1. Description
+1a. Note to GitHub users
 2. Test environment
 3. Usage
 4. Thanks
@@ -9,6 +10,10 @@
 ## Description
 
 This repository contains a solution to the Insight DevOps Engineering [challenge](https://github.com/InsightDataScience/systems-puzzle). See the link for a complete problem description.
+
+## Note to GitHub users
+
+The main repository is hosted on [BitBucket](https://bitbucket.org/lisaev1/insight-devops-systems-puzzle) (in Mercurial, and pushed to GitHub using the hggit extension). Please note that Git commit messages may contain references to non-existent commits because they are actually hg changeset id's. It is also possible that this mirror is outdated.
 
 ## Test environment
 
