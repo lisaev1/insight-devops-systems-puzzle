@@ -18,10 +18,15 @@ def add_item():
         except ValueError:
             return "The \"quantity\" field must contain an integer. No items were added, and the database was NOT updated."
 
-        item = Items(name=form.name.data, quantity=form.quantity.data, description=form.description.data, date_added=datetime.datetime.now())
+        item = Items(name=form.name.data,
+                     quantity=form.quantity.data,
+                     description=form.description.data,
+                     date_added=datetime.datetime.now())
         db_session.add(item)
         db_session.commit()
+
         return redirect(url_for('success'))
+
     return render_template('index.html', form=form)
 
 @app.route("/success")
