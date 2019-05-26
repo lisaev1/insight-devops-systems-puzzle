@@ -2,10 +2,10 @@
 
 ## Table of Contents
 1. Description
-1a. Note to GitHub users
-2. Test environment
-3. Usage
-4. Thanks
+2. Note to GitHub users
+3. Test environment
+4. Usage
+5. Thanks
 
 ## Description
 
